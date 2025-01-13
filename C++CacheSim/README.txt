@@ -1,0 +1,1 @@
+This folder contains the code for a CPU cache simulator written in C++ for a class project.

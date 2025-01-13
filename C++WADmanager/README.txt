@@ -1,0 +1,1 @@
+This is the source code I wrote for a class project to create a manager for WAD files. The libWad folder contains the code for the library that handles WAD files, and the libWad folder contains the code for the file daemon that uses FUSE to mount WAD files to a custom Linux distro we used in class.

@@ -1,0 +1,1 @@
+This folder contains the source code I wrote for a class project involving the creation of a memory managing library that could simulate the allocation of data of differing sizes into memory.
