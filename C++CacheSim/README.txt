@@ -1,1 +1,2 @@
-This folder contains the code for a CPU cache simulator written in C++ for a class project.
+This folder contains the code for a CPU cache simulator written in C++ for a class project. Variable-size set associative cache, fully associative cache, and direct mapped cache are implemented, and all inherit from a base cacheSim class. Two types of replacement strategies are implemented, first in first out and least recently used. The simulation involves adding instructions to the cache, and later testing if the cache still contains them, or if they have left the cache. This involves checking the hit/miss rate for the cache. 
+cacheSim.cpp handles testing the caches, while cacheSim.h implements the varying types of cache.

@@ -1,3 +1,5 @@
+#singleton manager with global functions
+
 extends Node
 
 var time = 0
@@ -38,10 +40,9 @@ var worlds = {
 var curWorld = 1
 var levelEntryPos = {
 	-1: Vector2(-256,153) #start pos, same for every world
-	#-1: Vector2(196,-16) #start pos, same for every world
 }
 var times = {}
-var flooredTimes = {
+var flooredTimes = { #goal times for levels
 	0: 15,
 	1: 15,
 	2: 20,
@@ -83,34 +84,33 @@ var devTimes = {
 	300: 11.80,
 	1000:13.5 
 }
-func exitToWorld():
+func exitToWorld(): #exit level 
 	Musicplayer.setVolume(defVol)
 	get_tree().change_scene_to_file(worlds[curWorld])
-func newWorld(worldNum):
+func newWorld(worldNum): #load new world
 	defVol=Musicplayer.defVol[worldNum-1]
 	curWorld=worldNum
 	currentlevel=-1
 	exitToWorld()
 	Musicplayer.update()
-func nextLevel():
+func nextLevel(): #leave current level, save time
 	if(time<times[currentlevel]||times[currentlevel]==0):
 		times[currentlevel] = time
 	
 func setLevel(l):
 	currentlevel=l
 	
-# Called when the node enters the scene tree for the first time.
+
 func _ready():
 	pass
 
 
 
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
 	pass
 	
-func save_func():
+func save_func(): #save times for each leve and which worlds are unlocked to a file
 	var yes= true
 	#print(global.worldLevels)
 	for level in global.worldLevels:
@@ -128,7 +128,7 @@ func save_func():
 	for i in worldsUnlocked:
 		save_game.store_line(str(i))
 	save_game.close()
-func load_func():
+func load_func(): #read in a save data file and update data to match
 	if not FileAccess.file_exists("user://savegame.save"):
 		return 
 	var save_game = FileAccess.open("user://savegame.save", FileAccess.READ)

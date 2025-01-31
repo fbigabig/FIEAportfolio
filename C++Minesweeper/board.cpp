@@ -1,5 +1,6 @@
+//board class, handles most of the game logic and holds most of the game data
 #include "board.h"
-board::tile::tile(int x, int y, board& b) {
+board::tile::tile(int x, int y, board& b) { //tile class constructor
 	xc = x;
 	yc = y;
 	mine = false;
@@ -12,11 +13,11 @@ board::tile::tile(int x, int y, board& b) {
 	sprite.setPosition(sf::Vector2f(x * 32, y * 32));
 	box.setPosition(sf::Vector2f(x * 32, y * 32));
 }
-bool board::tile::rc() {
+bool board::tile::rc() { //flag a tile when you right click
 	flagged = !flagged;
 	return flagged;
 }
-bool board::tile::arm() {
+bool board::tile::arm() { //place a mine on a tile if a tile doesn't already have a mine
 	if (mine) {
 		return true;
 	}
@@ -24,7 +25,7 @@ bool board::tile::arm() {
 	return false;
 }
 
-void board::tile::initadj(board& b) {
+void board::tile::initadj(board& b) { //set up a tile's vector of adjacent tiles
 	for (int i = -1; i <= 1; i++) {
 		if (i + xc < 0 || i + xc >= b.col) {
 			continue;
@@ -45,7 +46,7 @@ int board::clear(tile t) {
 board::tile* board::get(int x, int y) {
 	return &tiles.at(x).at(y);
 }
-bool board::checkcount() {
+bool board::checkcount() { //get the count of how many flags are left
 	int count = mines - flags;
 	vector<int> tens = { 100, 10, 1 };
 	if (count < 0) {
@@ -67,7 +68,7 @@ bool board::checkcount() {
 	}
 	return mines - flags < 0;
 }
-void board::reset() {
+void board::reset() { //reset the board for a new game
 	ifstream f;
 	f.open("./boards/config.cfg");
 	f >> col;
@@ -81,7 +82,7 @@ void board::reset() {
 	revcount = 0;
 	win = false;
 	face.setTexture(faces[0]);
-	for (int i = 0; i < col; i++)
+	for (int i = 0; i < col; i++)  //set up the tile 2d vector
 	{
 		vector<tile> temp;
 		for (int j = 0; j < rows; j++)
@@ -101,7 +102,7 @@ void board::reset() {
 	std::mt19937 generator(rng());
 	std::uniform_int_distribution<> distro_x(0, col - 1);
 	std::uniform_int_distribution<> distro_y(0, rows - 1);
-	for (int i = 0; i < mines; i++)
+	for (int i = 0; i < mines; i++) //randomly place all the mines
 	{
 		int x = distro_x(generator);
 		int y = distro_y(generator);
@@ -114,8 +115,7 @@ void board::reset() {
 	}
 	nums();
 }
-void board::load(int t) {
-
+void board::load(int t) { //load one of the 3 test boards
 	flags = 0;
 	mines = 0;
 	tiles.clear();
@@ -155,7 +155,7 @@ void board::load(int t) {
 				tiles.at(i).at(j).arm();
 				boom.push_back(get(i, j));
 				mines++;
-				
+
 			}
 		}
 	}
@@ -163,7 +163,7 @@ void board::load(int t) {
 	f.close();
 }
 
-board::board(int l, int h, int m) {
+board::board(int l, int h, int m) { //board constructor, set it up with a size and minecount
 	over = false;
 
 	col = l;
@@ -194,6 +194,7 @@ board::board(int l, int h, int m) {
 		buttons.push_back(tex);
 
 	}
+	//set up all the texture images
 	tests.at(0).setTexture(buttons.at(0));
 	tests.at(1).setTexture(buttons.at(1));
 	tests.at(2).setTexture(buttons.at(2));
@@ -218,7 +219,7 @@ board::board(int l, int h, int m) {
 		digits.at(i).setTexture(numbs);
 		digits.at(i).setPosition(sf::Vector2f(i * 21, 32 * rows));
 	}
-	digits.at(0).setTextureRect(sf::IntRect(21 * 10, 0, 21, 32)); 
+	digits.at(0).setTextureRect(sf::IntRect(21 * 10, 0, 21, 32));
 	checkcount();
 	face.setPosition(col * 32 / 2 - 32, rows * 32);
 	for (int i = 3; i > 0; i--) {
@@ -236,14 +237,14 @@ board::board(int l, int h, int m) {
 		}
 		tiles.push_back(temp);
 	}
-	for (int i = 0; i < col; i++)
+	for (int i = 0; i < col; i++) //set up the adjacent vectors for each tile
 	{
 		for (int j = 0; j < rows; j++)
 		{
 			get(i, j)->initadj(*this);
 		}
 	}
-	std::random_device rng;
+	std::random_device rng; //randomly place the mines
 	std::mt19937 generator(rng());
 	std::uniform_int_distribution<> distro_x(0, col - 1);
 	std::uniform_int_distribution<> distro_y(0, rows - 1);
@@ -260,7 +261,7 @@ board::board(int l, int h, int m) {
 	}
 	nums();
 }
-void board::gameover() {
+void board::gameover() { //end a game, reveal all the mines and remove all the flags
 	for (int i = 0; i < col; i++)
 	{
 		for (int j = 0; j < rows; j++) {
@@ -275,7 +276,7 @@ void board::gameover() {
 	over = true;
 }
 
-void board::nums() {
+void board::nums() { //count how many mines are adjacent for each tile
 	for (tile* a : boom)
 	{
 		a->sprite.setTexture(mine);
@@ -300,7 +301,7 @@ void board::nums() {
 		}
 	}
 }
-void board::reveal(tile* t) {
+void board::reveal(tile* t) { //reveal a tile if it hasn't been revealed or flagged, and reveal adjacent tiles if this tile's adjacent mine count is 0
 	if (t->vis || t->flagged) {
 		return;
 	}
@@ -316,12 +317,12 @@ void board::reveal(tile* t) {
 	}
 }
 
-void board::clicked(int x, int y, bool rc) {
-	if (x < 32 * col && y < 32 * rows && !over) {
+void board::clicked(int x, int y, bool rc) { //handle a mouse click
+	if (x < 32 * col && y < 32 * rows && !over) { //if a tile was clicked
 		x /= 32;
 		y /= 32;
 		tile* t = get(x, y);
-		if (rc) {
+		if (rc) { //flag it if it was a right click
 			if (over) {
 				return;
 			}
@@ -333,13 +334,13 @@ void board::clicked(int x, int y, bool rc) {
 				flags--;
 			}
 		}
-		else if (!t->flagged) {
-			if (t->mine) {
+		else if (!t->flagged) { //if it was a left click
+			if (t->mine) {//end the game if a mine was clicked
 				gameover();
 			}
 			else {
 				reveal(t);
-				if (revcount == col * rows - mines) {
+				if (revcount == col * rows - mines) { //otherwise, reveal the tile
 					over = true;
 					win = true;
 					face.setTexture(faces[1]);
@@ -353,16 +354,17 @@ void board::clicked(int x, int y, bool rc) {
 			}
 		}
 	}
-	else if (!rc) {
-		if (x >= face.getPosition().x && x <= face.getPosition().x + 64 && y >= face.getPosition().y && y <= face.getPosition().y + 64) {
+	else if (!rc) { //if another section of the game was left clicked
+		if (x >= face.getPosition().x && x <= face.getPosition().x + 64 && y >= face.getPosition().y && y <= face.getPosition().y + 64)  //if the reset button was clicked, reset the game
 			reset();
 		}
 		else {
-			for (sf::Sprite* a : all) {
+			for (sf::Sprite* a : all) { //if another button was hit
 				if (x >= a->getPosition().x && x <= a->getPosition().x + 64 && y >= a->getPosition().y && y <= a->getPosition().y + 64) {
-					if (a->getTexture() == &deb) {
+					if (a->getTexture() == &deb) { //if the debug button was hit, enter debug mode
 						debugOn = !debugOn;
 					}
+					//if one of the test board buttons was clicked, load that test board
 					else if (a->getTexture() == &buttons[0]) {
 						load(1);
 					}

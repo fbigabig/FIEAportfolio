@@ -6,15 +6,15 @@ std::string Wad::getMagic()
 }
 bool Wad::isContent(const std::string &path)
 {
-    tree *result = startSearch(path);
+    tree *result = startSearch(path); //gets the tree element matching the path given
     if (result == nullptr)
     {
         return false;
         cout << "Error: File does not exist" << endl;
     }
-    return !result->isDir();
+    return !result->isDir(); //if it exists, check if it is a dir and return the opposite of that
 }
-bool Wad::isDirectory(const std::string &path)
+bool Wad::isDirectory(const std::string &path) //same as above function but returns the opposite value
 {
     tree *result = startSearch(path);
     if (result == nullptr)
@@ -24,20 +24,20 @@ bool Wad::isDirectory(const std::string &path)
     }
     return result->isDir();
 }
-int Wad::getSize(const std::string &path)
+int Wad::getSize(const std::string &path) //get the size of a file at path
 {
     tree *result = startSearch(path);
     if (result == nullptr)
     {
         return -1;
     }
-    if(result->isDir()){
+    if(result->isDir()){ //this function is for files only
         return -1;
     }
     int tmp = result->self.length;
     return (tmp >= 0 ? tmp : -1);
 }
-int Wad::getContents(const std::string &path, char *buffer, int length, int offset)
+int Wad::getContents(const std::string &path, char *buffer, int length, int offset) //write the contents of a file to a buffer, return the length of the file
 {
     tree *result = startSearch(path);
     if (result == nullptr)
@@ -52,48 +52,49 @@ int Wad::getContents(const std::string &path, char *buffer, int length, int offs
     }
     else
     {
-        if (offset >= result->self.length)
+        if (offset >= result->self.length) { //the offset we would start at is outside the contents of the file, return 0 because nothing is written
             return 0;
-        fs.seekg(result->self.offset + offset, ios::beg);
-        if (offset + length > result->self.length)
-        {
-            length = result->self.length - offset;
         }
-        fs.read(buffer, length);
+        fs.seekg(result->self.offset + offset, ios::beg);
+        if (offset + length > result->self.length) //if we would try to read more than there is available
+        {
+            length = result->self.length - offset; //cap length at the length of the file minus the offset
+        }
+        fs.read(buffer, length); //read to the buffer
         return length;
     }
 }
-int Wad::getDirectory(const string &path, vector<string> *directoryVector)
+int Wad::getDirectory(const string &path, vector<string> *directoryVector) //fills a vector with the name of each file/dir in a dir, returns the number of elements in the dir
 {
     tree *result = startSearch(path);
     if (result == nullptr || !result->isDir())
     {
         return -1;
     }
-    directory *dir = (directory *)result;
+    directory *dir = (directory *)result; //cast result to the tree subclass dictionary
     for (auto e : dir->children)
     {
-        directoryVector->push_back(e->self.name);
+        directoryVector->push_back(e->self.name); //add the name of each child to the vector
     }
     return dir->children.size();
 }
 
-void Wad::createDirectory(const string &path) // need to make stuff at end of dir not start
+void Wad::createDirectory(const string &path)
 {
     if (hasMap(path))
     {
-        cout << "Error: no maps allowed" << endl;
+        cout << "Error: no maps allowed" << endl; //this functionality was not required for the project so map creation is not implemented
         return;
     }
-    //cout << "Creating directory at " << path << endl;
+
     string path2 = path;
     if (path.at(path.length() - 1) == '/')
     {
-        path2 = path.substr(0, path.length() - 1);
+        path2 = path.substr(0, path.length() - 1); //eliminate extra / at the end
     }
     int idx = path2.find_last_of("/");
-    string name = path2.substr(idx + 1);
-    string pathGo = path2.substr(0, idx);
+    string name = path2.substr(idx + 1); //name of the directory to be created
+    string pathGo = path2.substr(0, idx); //path to follow before we create the directory
 
     if (name.length() > 2)
     {
@@ -105,19 +106,14 @@ void Wad::createDirectory(const string &path) // need to make stuff at end of di
         cout << "Error: Dir already exists" << endl;
         return;
     }
-    //cout << path << " " << path2 << " " << name << " " << pathGo << endl;
     tree *tmp;
-    if (pathGo == "")
+    if (pathGo == "") //creating a directory in root
     {
-        /*
-        cout<<"Error: Cannot create in root directory"<<endl;
-        return;
-        */
         tmp = root;
     }
     else
     {
-        tmp = startSearch(pathGo);
+        tmp = startSearch(pathGo); //get the pointer for the directory we are making the new dir in
     }
 
     if (tmp == nullptr)
@@ -132,10 +128,10 @@ void Wad::createDirectory(const string &path) // need to make stuff at end of di
         return;
     }
 
-    directory *current = (directory *)tmp;
-    //cout << "current: " << current->self.name << endl;
+    directory *current = (directory *)tmp; //cast to dir
+
     int endLoc;
-    if (current != root)
+    if (current != root) //find the location in the list of descriptors that this directory's entry will be placed
     {
         vector<string> tmpVec = {};
 
@@ -160,11 +156,9 @@ void Wad::createDirectory(const string &path) // need to make stuff at end of di
     {
         endLoc = getEnd();
     }
-    //cout << "endLoc: " << endLoc << "end: " << end << endl;
-    int bytes = 32;
-    // addbytes(bytes, current);
 
-    // fix here:
+    int bytes = 32; //16 * 2 bytes (descriptors for start + end)
+
     fs.flush();
     char *buf = makeBuf(bytes, endLoc);
     fs.seekg(endLoc, ios::beg);
@@ -172,7 +166,7 @@ void Wad::createDirectory(const string &path) // need to make stuff at end of di
     string name2 = name + "_END";
     char *charName1 = new char[8];
     char *charName2 = new char[8];
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < 8; i++) //convert strings to character arrays
     {
         if (i < name1.length())
         {
@@ -187,7 +181,7 @@ void Wad::createDirectory(const string &path) // need to make stuff at end of di
             charName2[i] = name2.at(i);
         }
     }
-    //cout << "Writing: " << name1 << " " << name2 << " at " << endLoc << " " << fs.tellg() << endl;
+    //write descriptors to the list in the Wad
     fs.write(zero, 4);
     fs.write(zero, 4);
 
@@ -196,18 +190,18 @@ void Wad::createDirectory(const string &path) // need to make stuff at end of di
     fs.write(zero, 4);
     fs.write(charName2, 8);
     writeBuf(buf, bytes, endLoc);
-    //cout << "added" << endl;
-    elementInserter(0, 0, name, endLoc, current, true);
+
+    elementInserter(0, 0, name, endLoc, current, true); //add the dir to the tree
     updateDescNum(true);
 }
-void Wad::createFile(const string &path) // update these to use new directory stuff
+void Wad::createFile(const string &path) //basically same as above but makes a file
 {
     if (hasMap(path))
     {
         cout << "Error: no maps allowed" << endl;
         return;
     }
-    //cout << "Creating file at " << path << endl;
+
     string path2 = path;
     if (path.at(path.length() - 1) == '/')
     {
@@ -226,15 +220,11 @@ void Wad::createFile(const string &path) // update these to use new directory st
         return;
     }
     string pathGo = path2.substr(0, idx);
-    //cout << path << " " << path2 << " " << name << " " << pathGo << endl;
 
     tree *tmp;
     if (pathGo == "")
     {
-        /*
-        cout<<"Error: Cannot create in root directory"<<endl;
-        return;
-        */
+
         tmp = root;
     }
     else
@@ -254,7 +244,7 @@ void Wad::createFile(const string &path) // update these to use new directory st
     }
 
     directory *current = (directory *)tmp;
-    //cout << "current: " << current->self.name << endl;
+
     int endLoc;
     if (current != root)
     {
@@ -280,9 +270,9 @@ void Wad::createFile(const string &path) // update these to use new directory st
     {
         endLoc = getEnd();
     }
-    //cout << "endLoc: " << endLoc << "   end:   " << end << endl;
+
     fs.flush();
-    char *buf = makeBuf(16, endLoc);
+    char *buf = makeBuf(16, endLoc); //one descriptor will be added
     fs.seekg(endLoc, ios::beg);
     fs.write(zero, 4);
     fs.write(zero, 4);
@@ -299,17 +289,16 @@ void Wad::createFile(const string &path) // update these to use new directory st
             break;
         }
     }
-    //cout << "Writing: " << name << " char name  " << charName << " at " << endLoc << " " << fs.tellg() << endl;
+
     fs.write(charName, 8);
     writeBuf(buf, 16, endLoc);
-    //cout << "\n\n\nddedFILE MADE at  "<<path<<" \n\n" << endl;
+
     elementInserter(0, 0, name, endLoc, current);
     updateDescNum(false);
 }
 int Wad::writeToFile(const string &path, const char *buffer, int length, int offset)
 {
-    //cout<<"\n\n\nwrite to file\n\n";
-    //cout << path << endl;
+
     string path2 = path;
     if (path.at(path.length() - 1) == '/')
     {
@@ -317,7 +306,7 @@ int Wad::writeToFile(const string &path, const char *buffer, int length, int off
     }
     int idx = path2.find_last_of("/");
     string pathGo = path2.substr(0, idx);
-    //cout << pathGo << endl;
+
     tree *current = startSearch(path2);
     if (current == nullptr)
     {
@@ -335,9 +324,9 @@ int Wad::writeToFile(const string &path, const char *buffer, int length, int off
         cout << "Error: File is not empty" << endl;
         return 0;
     }
-    int bytes = length + offset;
+    int bytes = length + offset; //we need to write offset null bytes and length bytes so the total bytes is length + offset
 
-    // addbytes(bytes, current);
+
 
     vector<string> tmpVec = {};
     string tmp = "";
@@ -355,7 +344,7 @@ int Wad::writeToFile(const string &path, const char *buffer, int length, int off
     }
     if (tmp != "")
         tmpVec.push_back(tmp);
-    int descWhere = findDescriptorOffset(current->self.name, tmpVec);
+    int descWhere = findDescriptorOffset(current->self.name, tmpVec); //find the descriptor for the file we are writing to
     if (descWhere == -1)
     {
         cout << "Error: File not found in descriptor list" << endl;
@@ -363,27 +352,27 @@ int Wad::writeToFile(const string &path, const char *buffer, int length, int off
     }
     descWhere += descOffset;
     fs.flush();
-    fs.seekg(descWhere, ios::beg);
-    fs.write((char *)&descOffset, 4);
+    fs.seekg(descWhere, ios::beg); //go to the descriptor
+    fs.write((char *)&descOffset, 4); //update the descriptor offset for this file to say that it's content is where the descriptors were previously, as we will be moving the list of descriptors to make room
     fs.write((char *)&bytes, 4);
-    char *buf = makeBuf(bytes, descOffset);
-    fs.seekg(descOffset, ios::beg);
+    char *buf = makeBuf(bytes, descOffset); //store the list of descriptors in a buffer to write back later
+    fs.seekg(descOffset, ios::beg); //go to where we want to write the file
     if (offset > 0)
     {
 
         char filler[offset];
         memset(filler, 0, offset);
-        fs.write(filler, offset);
+        fs.write(filler, offset); //fill offset bytes with null data
     }
-    //cout << "descOffset: " << descOffset << "end:" << end << " bytes: " << bytes << " buffer: " << buffer << " legtnh + offset" << length << " " << offset << " where" << descWhere << " num " << descNum << endl;
-    fs.write(buffer, length);
-    current->self.offset = descOffset;
 
+    fs.write(buffer, length); //write the content of the file to the wad
+    current->self.offset = descOffset; //update its element in the tree
     current->self.length = bytes;
-    writeBuf(buf, bytes, descOffset);
-    descOffset += bytes;
+
+    writeBuf(buf, bytes, descOffset); //write the list of descriptors to the new descriptor offset location (descOffset+bytes)
+    descOffset += bytes; //update descOffset
     fs.seekg(8, ios::beg);
-    fs.write((char *)&descOffset, 4);
+    fs.write((char *)&descOffset, 4); //write the new descriptor offset to the start of the Wad
     fs.flush();
     return length;
 }

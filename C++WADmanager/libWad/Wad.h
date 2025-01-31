@@ -1,3 +1,5 @@
+//libWad header file, implements function prototypes, definies variables, and implements some of the functionality of the library (mainly helper functions, while the cpp file contains the main functions).
+//Also includes tree and directory subclasses (tree is the base class and used for individual files, directory inherits from tree and adds onto it)
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -11,7 +13,7 @@ class Wad
 {
 private:
     string magic;
-    int endsWith(string const &str)
+    int endsWith(string const &str) //check if a string is the start of end of a dir
     {
         int idx = str.find_last_of("_");
         if (idx == string::npos)
@@ -33,22 +35,35 @@ private:
     }
 
 public:
-    int descNum;
-    int descOffset;
+
+    int descNum; //number of descriptors
+    int descOffset; //offset of the list of descriptors
     fstream fs;
     string path;
-    char *zero = new char[4]{0, 0, 0, 0};
-    struct element
+    char *zero = new char[4]{0, 0, 0, 0}; //used for writing null data
+
+    int getEnd(){ //find how long the file opened by fstream fs is
+        int g = fs.tellg();
+        fs.seekg(0, ios::end);
+        int end = fs.tellg();
+        fs.seekg(g, ios::beg);
+        return end;
+    }
+
+
+    struct element //contains basic information about a file
     {
         int offset;
-        // int descWhere;
         int length;
         string name;
         bool isMap = false;
     };
+
+
+
     struct tree;
     struct directory;
-    struct tree
+    struct tree //contains information about a file, as well as the directory it is stored in
     {
         directory *parent;
 
@@ -66,72 +81,63 @@ public:
             self.offset = 0;
             parent = nullptr;
         }
-        virtual bool isDir()
+        virtual bool isDir() //this class will always return false when this function is called, its used to distinguish between it and its child class
         {
             return false;
         }
     };
-    int getEnd(){
-        int g = fs.tellg();
-        fs.seekg(0, ios::end);
-        int end = fs.tellg();
-        fs.seekg(g, ios::beg);
-        return end;
-    }
-    struct directory : tree
+    struct directory : tree //extends tree class functionality to contain information about a directory and its children
     {
         vector<tree *> children;
-        directory(element e, directory *up) : tree(e, up)
+        directory(element e, directory *up) : tree(e, up) //calls the tree(e, up) constructor
         {
         }
-        directory()
+        directory() //default constructor
         {
         }
-        tree *addElement(element e)
+        tree *addElement(element e) //create a tree instance to represent a file in this directory and add it to the list of elements in this directory
         {
-            // cout << e.name << " " << e.length << " " << e.offset << " added by   "<< self.name<<endl;
-            // children[e.name];
-            // cout<<"a"<<endl;
             tree *tmp = new tree(e, this);
             children.push_back(tmp);
             return tmp;
-            // cout<<"Added: "<<e.name<<" "<<e.length<<" "<<e.offset<<endl;
         }
-        directory *addDirectory(element e)
+        directory *addDirectory(element e) //create a directory instance to represent another directory inside this one and add it to the list of elements in this directory
         {
             directory *tmp = new directory(e, this);
             children.push_back(tmp);
             return tmp;
         }
-        bool isDir()
+        bool isDir() //distinguishes this class from the tree class
         {
             return true;
         }
     };
 
+
+
 private:
-    int findDescriptorOffset(string name, vector<string> &folders)
+    int findDescriptorOffset(string name, vector<string> &folders) //find the location of the description inside the WAD TOC
     {
         fs.flush();
         bool found = false;
         bool rootFolder = false;
-        if (folders.size() == 0)
+        if (folders.size() == 0) //folders vectors lists the folders we have to go into to find out file, so if its empty we're looking in the root folder
+
         {
             found = true;
             rootFolder = true;
         }
-        //cout << "Searching for: " << name << endl;
+
         fs.seekg(descOffset, ios::beg);
-        //cout << "Desc offset: " << descOffset << " " << fs.tellg() << "descNUM" << descNum << " math" << descNum * 16 << " end" << end << " math2 " << descOffset + descNum * 16 << endl;
         char *buffer = new char[8];
 
-        for (int i = 0; i < descNum; i++)
+        for (int i = 0; i < descNum; i++) //go thru every descriptor in the list of descriptors
         {
             fs.read(buffer, 8);
             fs.read(buffer, 8);
-            // cout<<"Checking: "<<string(buffer, 8)<<endl;
+
             string tmp = string(buffer, 8);
-            //cout << "Checking: " << tmp << endl;
+
             for (int j = 0; j < 8; j++)
             {
                 if (tmp.at(j) == 0)
@@ -141,51 +147,31 @@ private:
                     break;
                 }
             }
-            //cout << "Checking: " << tmp << "   compare  "<<tmp.compare(name)<<endl;
-           // for(auto c:tmp) {
-           //     cout<<c<<" ";
-           // }
-            /*cout<<endl;
-            for(auto c:name) {
-                cout<<c<<" ";
-            }
-            cout<<endl;
-            cout << folders.size() << endl;
-            cout<<found<<" "<<rootFolder<<endl;
-            if(!rootFolder){
-                for(auto f: folders){
-                    cout<<f<<endl;
-                }
-            }*/
+
             if (!found)
             {
                 if (tmp.compare(folders[0] + "_START")==0)
                 {
                     if (folders.size() > 1)
                     {
-                        folders.erase(folders.begin());
+                        folders.erase(folders.begin()); //we moved into a folder we wanted, move on to next folder
                     }
                     else
                     {
-                        //cout<<"Found"<<endl;
-                        //for(auto f: folders){
-                        //    cout<<f<<endl;
-                        //}
-                        found = true;
+                        found = true; //we found the folder we wanted
                     }
                 }
             }
-            else
+            else //we're in the right folder, look for the file
             {
-                if (tmp.compare(name) == 0)
+                if (tmp.compare(name) == 0) //found it
                 {
-                    return (i) * 16;
+                    return (i) * 16; //16B/descriptor* i descriptors
                 }
                 else if (!rootFolder)
                 {
-                    if (tmp.compare(folders[0] + "_END") == 0)
+                    if (tmp.compare(folders[0] + "_END") == 0) //couldn't find it
                     {
-                        //cout << "left folder" << endl;
                         return -1;
                     }
                 }
@@ -194,61 +180,58 @@ private:
         //cout << "Not found" << endl;
         return -1;
     }
-    tree *search(tree *t, string path)
+    tree *search(tree *t, string path) //recursively look through tree nodes for a file specified by path
     {
         if (path == "")
         {
             return nullptr;
         }
-        int find = path.find("/");
+        int find1 = path.find("/");
         string current;
         bool lff = false;
         if (find != string::npos)
         {
-            int find2 = path.find("/", find + 1);
-            if (find2 != string::npos)
+            int find2 = path.find1("/", find1 + 1);
+            if (find2 != string::npos) //there are multiple / in the path, meaning that we have to look for directories then a file
             {
-                current = path.substr(find + 1, find2 - find - 1);
+                current = path.substr(find1 + 1, find2 - find1 - 1);
                 if (find2 + 1 == path.length())
                 {
-                    lff = true;
+                    lff = true; //we are looking for a file
                 }
                 else
                 {
-                    lff = false;
+                    lff = false; //we have to find a directory before we can look for a file
                 }
             }
-            else
+            else //no need to find dirs, just look for the file
             {
-                current = path.substr(find + 1);
+                current = path.substr(find1 + 1); //get the name we are currently looking for
                 lff = true;
             }
         }
-        else
+        else //no / so we're just looking for a file
         {
             current = path;
             lff = true;
         }
-        // cout << "Current: " << current << " lff: "<<lff<<endl;
 
-        if (t->isDir())
+        if (t->isDir()) //if the current tree node we're looking at is a directory
         {
-            for (auto i : ((directory *)t)->children)
+            for (auto i : ((directory *)t)->children) //look thru the files/dirs in the dir
             {
 
                 int result = i->self.name.compare(current);
-                // cout<<"Checking: "<<i.first<<" "<<current<<" "<<result<<endl;
-                if (result == 0)
+                if (result == 0) //if the file/dir has the name we want
                 {
-                    // cout<<"Found: "<<i.first<<" "<<current<<endl;
                     if (lff)
                     {
-                        return i;
+                        return i; //if we were looking for a file, return a pointer to that file
                     }
                     else
                     {
-                        tree *result = search(i, path.substr(find + 1));
-                        if (result != nullptr)
+                        tree *result = search(i, path.substr(find + 1)); //we found a directory we wanted, now search it for the next thing we want
+                        if (result != nullptr) //we found the file, recurse back up with the result
                         {
                             return result;
                         }
@@ -256,27 +239,10 @@ private:
                 }
             }
         }
-        return nullptr;
-    } /*
-     void addbytes(int bytes, tree *current)
-     {
-         // fix whoopsie
-         bool found = false;
-         for (auto t : nodesInOrder)
-         {
-             if (found)
-             {
-                 t->self.offset += bytes;
-                 t->self.descWhere += bytes;
-             }
-             if (t == current)
-             {
-                 found = true;
-             }
-         }
-     }
-     */
-    bool hasMap(string s)
+        return nullptr; //failed to find it, return
+    }
+
+    bool hasMap(string s) //check if a string is a map-type file which contains the next 10 files (ex E1M1)
     {
         for (int i = 0; i + 3 < s.length(); i++)
         {
@@ -288,7 +254,7 @@ private:
         return false;
     }
 
-    char *makeBuf(int bytes, int where)
+    char *makeBuf(int bytes, int where) //make a buffer in the data to create room for stuff to be written
     {
         int end = getEnd();
         if (where == end)
@@ -301,47 +267,37 @@ private:
         fs.seekg(where, ios::beg);
         fs.read(buffer, end - where);
 
-        //cout << "Buffer: " << buffer << " " << end << " " << where << "tell  " << fs.tellg() << endl;
-        return buffer;
+
+        return buffer; //return a pointer to where the data was written
     }
-    void writeBuf(char *buffer, int bytes, int where)
+    void writeBuf(char *buffer, int bytes, int where) //write x bytes from the buffer at where+bytes bytes in the wad
     {
-        int end = getEnd();
+        int endv = getEnd();
         if (buffer == nullptr)
         {
-            //cout << "Buffer is null" << endl;
+            //buffer is null
             return;
         }
 
-        //cout << "Buffer: " << buffer << " " << end << " " << where << endl;
+
         fs.flush();
         fs.seekg(where + bytes, ios::beg);
-        fs.write(buffer, end - where);
+        fs.write(buffer, endv - where);
         delete[] buffer;
     }
 
-    void updateDescNum(bool dir)
+    void updateDescNum(bool dir) //update the number of descriptors
     {
-        
-        //cout << "\n\nUpdating desc num  " << descNum<<endl;
+
         descNum += (dir ? 2 : 1);
-        //cout<<"New desc num: "<<descNum<<endl;
         fs.seekg(4, ios::beg);
         fs.write((char *)&descNum, 4);
         fs.seekg(4, ios::beg);
         char fgj[4];
         fs.read(fgj, 4);
-        //cout<<"Read: "<<*(int*)fgj<<endl<<endl;
-    } /*
-     void dumpAll() {
-         fs.seekg(0, ios::beg);
-         //header
-         fs.write(magic.c_str(), 4);
-         fs.write((char *)&descNum, 4);
-         fs.write((char *)&descOffset, 4);
-     }*/
+    }
 
-    void elementInserter(int length, int offset, string name, int descWhere, directory *current, bool dir = false)
+    void elementInserter(int length, int offset, string name, int descWhere, directory *current, bool dir = false) //take in information, make an element from it, and then add it to the directory passed in
     {
         element newElement;
         newElement.length = length;
@@ -361,7 +317,7 @@ private:
 public:
     directory *root;
 
-    tree *startSearch(string path)
+    tree *startSearch(string path) //start a search if what is being searched for is not root, otherwise, return root
     {
         if (path == "/")
         {
@@ -370,7 +326,7 @@ public:
         return search(root, path);
     }
 
-    Wad(const string &path)
+    Wad(const string &path) //construct a Wad instance from a file
     {
         vector<element> elements;
         descNum = 0;
@@ -390,8 +346,8 @@ public:
         descNum = *(int *)buffer;
         fs.read(buffer, 4);
         descOffset = *(int *)buffer;
-        fs.seekg(descOffset, ios::beg);
-        for (int i = 0; i < descNum; i++)
+        fs.seekg(descOffset, ios::beg); //go to the list of descriptors
+        for (int i = 0; i < descNum; i++) //read each descriptor
         {
             fs.read(buffer, 4);
             int offset = *(int *)buffer;
@@ -402,11 +358,10 @@ public:
             element e;
             e.offset = offset;
             e.length = length;
-            e.name = string(name, 8);
-            //cout << e.name << endl;
+            e.name = string(name, 8); //turn a descriptor into an element
             for (int i = 0; i < 8; i++)
             {
-                if (e.name.at(i) == 0)
+                if (e.name.at(i) == 0) //cut out extra zeros
                 {
                     e.name = e.name.substr(0, i);
                     break;
@@ -414,43 +369,38 @@ public:
             }
             elements.push_back(e);
         }
-        //end = descOffset + descNum * 16;
-        //cout << "End: " << end << " " << fs.tellg() << "    " << descOffset << "    " << descNum * 16 << endl;
-        root = new directory();
+
+        root = new directory(); //set up our tree
         directory *current = root;
         int counter = 0;
-        for (auto e : elements)
+        for (auto e : elements) //add each element to the tree
         {
-            //cout << "Adding: " << e.name << "   current   " << current->self.name << endl;
 
-            if (counter > 0)
+            if (counter > 0) //counter tracks if we're in a map right now
             {
-                (current)->addElement(e);
+                (current)->addElement(e); //add the current element to the map directory
                 counter--;
                 if (counter == 0)
                 {
-                    current = current->parent;
+                    current = current->parent; //exit the map directory
                 }
                 continue;
             }
 
-            int result = endsWith(e.name);
-            if (result == 2)
+            int result = endsWith(e.name); //check if the current element is the start or end of a dir
+            if (result == 2) //e is the end of the current dir, go up one level
             {
-                // cout << "end" << endl;
-
-                // current->end = last;
 
                 current = current->parent;
             }
-            else if (result == 1)
+            else if (result == 1) //e is the start of a dir
             {
-                e.name = e.name.substr(0, e.name.find("_START"));
-                directory *tmp = (current)->addDirectory(e);
+                e.name = e.name.substr(0, e.name.find("_START")); //cut out the start text from the name of the dir
+                directory *tmp = (current)->addDirectory(e); //create the dir element
 
                 current = tmp;
             }
-            else if (e.name.at(0) == 'E' && e.name.at(2) == 'M')
+            else if (e.name.at(0) == 'E' && e.name.at(2) == 'M') //e is a map, read in the next 10 elements and add them to the map's directory
             {
                 counter = 10;
                 e.isMap = true;
@@ -461,19 +411,18 @@ public:
             else
             {
 
-                (current)->addElement(e);
+                (current)->addElement(e); //e is a file, add it to the current directory
             }
-            // cout << "Added element: " << e.name << "  counter: "<<counter<<" result: "<<result<<endl;
+
         }
 
-        //printTree(root);
     }
-    static Wad *loadWad(const std::string &path)
+    static Wad *loadWad(const std::string &path) //load a new Wad at the path specified
     {
         Wad *myWad = new Wad(path);
         return myWad;
     }
-    static void printTree(tree *t, int depth = 0)
+    static void printTree(tree *t, int depth = 0) //print the entire tree, used for debugging
     {
         for (int i = 0; i < depth; i++)
         {
@@ -489,6 +438,7 @@ public:
             }
         }
     }
+    //function prototypes
     std::string getMagic();
     bool isContent(const std::string &path);
     bool isDirectory(const std::string &path);
@@ -498,25 +448,13 @@ public:
     void createDirectory(const std::string &path);
     void createFile(const string &path);
     int writeToFile(const string &path, const char *buffer, int length, int offset = 0);
-    /*
-    void printAll()
+
+    ~Wad() //destructor
     {
-        cout << "Magic: " << magic << endl;
-        cout << "Number of elements: " << descNum << endl;
-        cout << "Offset of elements: " << descOffset << endl;
-        for (int i = 0; i < nodesInOrder.size(); i++)
-        {
-            cout << nodesInOrder[i]->self.name << endl;
-        }
-    }
-    */
-    ~Wad()
-    {
-        //printTree(root);
         delTree(root);
         fs.close();
     }
-    void delTree(tree *t)
+    void delTree(tree *t) //recursively delete every element in the tree.
     {
 
         if (t->isDir())

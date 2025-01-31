@@ -3,11 +3,12 @@
 #include <map>
 #include <iostream>
 using namespace std;
+//two allocator types
 int bestFit(int sizeInWords, void *list);
 int worstFit(int sizeInWords, void *list);
 class MemoryManager {
     public:
-        class block {
+        class block { //one chunk of memory, used to represent holes in memory as well
                 public:
                     int start;
                     void* ptr;
@@ -19,14 +20,14 @@ class MemoryManager {
                     }
             };
     private:
-        
+
         bool shutdownCalled = false;
         int bytesTotal=0;
         int wordSize=0;
         int sizeInWords=0;
         int wordsLeft=0;
-        //void* memory;
-        std::function<int(int, void *)> allocator;
+
+        std::function<int(int, void *)> allocator; //allocator used to determine how to fit new data into holes
         void* holeList=0;
         char* allocated=nullptr;
         map<int, block*> holes;
@@ -37,8 +38,8 @@ class MemoryManager {
             this->allocator = (allocator);
 
         }
-        ~MemoryManager(){
-            if(shutdownCalled){
+        ~MemoryManager(){ //destructor, free all used memory
+            if(shutdownCalled){ //tracks if memory was already freed by shutdown
                 return;
             }
             for(auto i: blocks){
@@ -48,9 +49,7 @@ class MemoryManager {
             for(auto i: holes){
                 delete(i.second);
             }
-            //cout<<"shutdow~n"<<endl;
             holes.clear();
-            //::free(holeList);
             delete[] (allocated);
             allocated=nullptr;
         }

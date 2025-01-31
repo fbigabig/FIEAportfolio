@@ -6,61 +6,54 @@
 #include <iterator>
 #include <algorithm>
 #include <unistd.h>
-int worstFit(int sizeInWords, void *list) { //fix later
+int worstFit(int sizeInWords, void *list) { //chooses the biggest hole that fits a block sizeInWords words.
     uint16_t* holeList = static_cast<uint16_t*>(list);
     int index = -1;
-    int max = -1;
-    //cout<<"worstfit"<<endl;
+    int mx = -1;
     uint16_t holeListlength = holeList[0];
-    //cout<<"holeListlength: "<<holeListlength<<" "<<holeList[0]<<endl;
     for(int i = 1; i<holeListlength*2; i+=2){
-        //cout<<"test"<<endl;
-        //cout<<holeList[i]<<" "<<holeList[i+1]<<endl;
-        if(holeList[i+1] >= sizeInWords && holeList[i+1] > max){
+
+
+        if(holeList[i+1] >= sizeInWords && holeList[i+1] > mx){
             index = holeList[i];
             max = holeList[i+1];
         }
     }
-    //cout<<"done"<<endl; 
     return index;
 }
 
-int bestFit(int sizeInWords, void *list){
+int bestFit(int sizeInWords, void *list){ //chooses the smallest hole that fits a block sizeInWords words.
     uint16_t* holeList = static_cast<uint16_t*>(list);
-    
+
     int index = -1;
     int min = 65537;
-    //cout<<"bestFit"<<endl;
     uint16_t holeListlength = holeList[0];
-    //cout<<"holeListlength: "<<holeListlength<<" "<<holeList[0]<<endl;
     for(int i = 1; i<holeListlength*2; i+=2){
-        //cout<<"test"<<endl;
-        //cout<<holeList[i]<<" "<<holeList[i+1]<<endl;
+
         if(holeList[i+1] >= sizeInWords && holeList[i+1] < min){
             index = holeList[i];
             min = holeList[i+1];
         }
     }
-    //cout<<"done"<<endl; 
+    //cout<<"done"<<endl;
     return index;
 }
-void MemoryManager::initialize(size_t sizeInWords){
-    //holes = vector<block*>();
-    //blocks = map<int, block*>;
-    if(sizeInWords>65536) {
+void MemoryManager::initialize(size_t sizeInWords){ //actually sets up the memory manager, works like a constructor.
+
+    if(sizeInWords>65536) { //bigger than allowed, do not initialize
         return;
     }
     if(allocated!=nullptr) {
         shutdown();
     }
     shutdownCalled = false;
-    //holeList = &holes;
+
     bytesTotal = sizeInWords * wordSize;
-    //memory = malloc(bytesTotal);
+
     allocated = new char[bytesTotal];
     this->sizeInWords = static_cast<int>(sizeInWords);
-    holes.emplace(0, new block(0, sizeInWords, allocated));
-    //allocated = new vector<block*>();
+    holes.emplace(0, new block(0, sizeInWords, allocated)); //create a hole the size of memory since all of memory is open right now
+
     wordsLeft = this->sizeInWords;
 }
 void MemoryManager::shutdown(){
@@ -96,16 +89,16 @@ void* MemoryManager::allocate(size_t sizeInBytes){
     if(offset == -1){
         //cout<<"offset == -1"<<endl;
         return nullptr;
-        
+
     }
     delete[] (uint16_t*)holeList;
-    //cout<<"offset: "<<offset<<endl; 
+    //cout<<"offset: "<<offset<<endl;
 
-    
+
     block* hole = holes.at(offset);
     void* temp = holes.at(offset)->ptr;
     block* allocatedBlock = new block(hole->start, allocateWordSize, temp);
-    
+
     blocks.emplace(hole->start, allocatedBlock);
 
     if(hole->size > allocateWordSize){
@@ -117,7 +110,7 @@ void* MemoryManager::allocate(size_t sizeInBytes){
     return allocatedBlock->ptr;
 }
 void MemoryManager::free(void *address){ //breaks here
-    
+
     //cout<<"free"<<endl;
     bool freed=false;
     map<int,block*>::iterator hole;
@@ -135,8 +128,8 @@ void MemoryManager::free(void *address){ //breaks here
         }
     }
     if(freed) {
-        
-        
+
+
         map<int,block*>::iterator nxt = next(hole);
         if(hole!=holes.begin()) {
             map<int,block*>::iterator b4 = prev(hole);
@@ -197,7 +190,7 @@ void* MemoryManager::getList(){
     for(auto i:holes){
         list[1+j*2] = i.first;
         list[2+j*2] = i.second->size;
-        //cout<<list[1+j*2]<<" "<<list[2+j*2]<<endl; 
+        //cout<<list[1+j*2]<<" "<<list[2+j*2]<<endl;
         j++;
     }
     ////cout<<list->size()<<endl;
@@ -238,7 +231,7 @@ void* MemoryManager::getBitmap(){
             break;
         }
         int nxt = i->first;
-        
+
         for(int j = end; j<nxt; j++){
             ////cout<<"j: "<<j<<endl;
             //cout<<0;
@@ -247,7 +240,7 @@ void* MemoryManager::getBitmap(){
     }
     for(int i=0; i<bytes; i++){
         //cout<<"bitmap of "<<i<<": "<<bitmap[i]<<endl;
-        
+
     }
     for(int i=0; i<bytes; i++){
         reverse(bitmap[i].begin(), bitmap[i].end());

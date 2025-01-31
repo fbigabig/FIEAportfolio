@@ -17,16 +17,12 @@ int main(){
 	//setup variables
 	avl tree;
 	int commands;
-	//std::fstream std::cin;
-	//std::cin.open("tests.txt");
 
 	//get number of commands
-	//std::cin >> commands;
 	std::cin >> commands;
 	//get to the next line
 	std::string tmp;
 
-	//std::getline(std::cin, tmp); //get rid of useless input
 	std::getline(std::cin, tmp); //get rid of useless input
 
 	for (int i = 0; i < commands; i++) //loop to get thru every command
@@ -44,7 +40,7 @@ int main(){
 			int id;
 			getline(stream, tmp,'"'); //get rid of useless input
 			getline(stream, name, '"');
-			//std::cout << "name->" << name << "\n";
+
 			name = removeQuotes(name);
 			std::string tmpid;
 			stream >> tmpid;
@@ -55,7 +51,7 @@ int main(){
 				id = std::stoi(tmpid);
 				tree.insert(id, name);
 			}
-		} 
+		}
 		else if (command == "remove") {
 			//removal case
 			int id;
@@ -73,7 +69,7 @@ int main(){
 			std::string toFind;
 			getline(stream, tmp, ' '); //get rid of useless imput
 			getline(stream, toFind);
-			//std::cout << "tofind->" << toFind << "\n";
+
 			bool isNumber = true;
 			//determine if input is a number or string
 			for (char c : toFind) {
@@ -104,7 +100,7 @@ int main(){
 			tree.printLevelCount();
 		}
 		else {
-			std::cout << "unsuccessful\n"; 
+			std::cout << "unsuccessful\n";
 		}
 	}
 

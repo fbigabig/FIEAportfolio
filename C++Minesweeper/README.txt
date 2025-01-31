@@ -1,0 +1,1 @@
+This is the source code I wrote for a class project using the SFML C++ library (version 2.6), which was a recreation of minesweeper. This is just the code, as the full project requires an SFML install and sprites to run.

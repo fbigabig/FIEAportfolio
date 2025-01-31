@@ -80,8 +80,8 @@ var hitConveyor = {
 	"white": false,
 	"black": false
 }
-func _ready():
-	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
+func _ready(): #set up basic stuff
+	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN) 
 	global.player=self
 	global.time=0
 	field.hide()
@@ -91,49 +91,43 @@ func _ready():
 	UI = UItemplate.instantiate() 
 	get_parent().add_child.call_deferred(UI)
 func _input(event):
-	if (event is InputEventKey or event is InputEventMouse) and !useMouse:
+	if (event is InputEventKey or event is InputEventMouse) and !useMouse: #switch to keyboard mode
 		Input.set_mouse_mode(Input.MOUSE_MODE_CONFINED)
 
 		useMouse = true
-	if (event is InputEventJoypadButton or event is InputEventJoypadMotion) and useMouse:
+	if (event is InputEventJoypadButton or event is InputEventJoypadMotion) and useMouse: #switch to controller mode
 		Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 		await get_tree().create_timer(.05).timeout
 
 		useMouse = false
 	if(not timerStarted):
-		if(not event is InputEventMouseMotion and (event.is_action("moveLeft") or event.is_action("moveRight")  or event.is_action("jump") )) or Input.get_axis("moveLeft","moveRight")!=0:
+		if(not event is InputEventMouseMotion and (event.is_action("moveLeft") or event.is_action("moveRight")  or event.is_action("jump") )) or Input.get_axis("moveLeft","moveRight")!=0: #start level timer
 			timerStarted=true
-	# Mouse in viewport coordinates.
 func _process(delta):
 
 	if(timer!=null and timerStarted):
 		global.time+=delta
-		timer.text="[center]"+str(global.time).pad_decimals(2)+"[/center]"
-	if(direction!=0):
-		wheel.play()
+		timer.text="[center]"+str(global.time).pad_decimals(2)+"[/center]" 
+	if(direction!=0): #player animation control
+		wheel.play() 
 		
 		wheel.flip_h = direction<0
 	else:
 		wheel.pause()
-	if(interactBox && Input.is_action_just_pressed("confirm")):
+	if(interactBox && Input.is_action_just_pressed("confirm")): #select level in hubworld
 		for i in interacter.get_overlapping_areas():
 			if(i.is_in_group("selector")):
 				i.doLoad()
 	elif(Input.is_action_just_pressed("restart")):
 		die()
-	elif Input.is_action_just_pressed("shoot")&&  canBounce&&(aim_dir!=Vector2.ZERO):
+	elif Input.is_action_just_pressed("shoot")&&  canBounce&&(aim_dir!=Vector2.ZERO): #start a dash
 
-		if(useMouse):
-			#velocity = Vector2.ZERO
-			#print("Mouse Click at: ", event.position)
-			
+		if(useMouse): #get aim dir
 			aim_dir= (get_global_mouse_position()-global_position).normalized()
-
-
 		else:
 			aim_dir = Input.get_vector("aimLeft", "aimRight", "aimUp", "aimDown").normalized()
 		
-		if(beingShot):
+		if(beingShot): #if being shot out of cannon, buffer a dash
 			buffBounce=true
 			field.modulate=fieldFresh
 			field.show()
@@ -145,13 +139,13 @@ func _process(delta):
 	elif(Input.is_action_just_pressed("jump")):
 		jumpTicks=jumpTicksNum
 	
-func startBounce():
+func startBounce(): #start a bouncedash, set up everything
 	emit_signal("landed") #used to reset cannons
 	onconveyor=false
 	onice=false
 	oldOnConveyor=false
 	bounce=BounceState.Bouncing
-	field.modulate=fieldFresh
+	field.modulate=fieldFresh 
 	field.show()
 	if(player.playing):
 		player.stop()
@@ -159,25 +153,22 @@ func startBounce():
 		player.stream=bounceNoise1
 	player.play()
 	canBounce=false
-func transgenderBounce(collision):
+func transitionBounce(collision): #switch from part 1 of a bounce to part 2
 	field.modulate=fieldUsed
 	bounce=BounceState.Landing
-	velocity = velocity.bounce(collision.get_normal()) * bounceFact * (SUPERBOUNCE if hitBouncy else 1)
+	velocity = velocity.bounce(collision.get_normal()) * bounceFact * (SUPERBOUNCE if hitBouncy else 1) #bounce off a surface
 	if(player.playing):
 		player.stop()
-	if(hitBouncy):
+	if(hitBouncy): 
 		if(player.stream!=superbounceNoise):
 			player.stream=superbounceNoise
 	else:
 		if(player.stream!=bounceNoise):
 			player.stream=bounceNoise
 	player.play()
-	#print(hitBouncy)
-	#if(hitBouncy):
-		#velocity=Vector2(pow(abs(velocity.x),1.1)*(1 if velocity.x>0 else -1),pow(abs(velocity.y),1.1)*(1 if velocity.y>0 else -1))
-		#print(velocity)
 
-func endBounce():
+
+func endBounce(): #go back to normal, end dash mode
 	bounce=BounceState.None
 	field.hide()
 	if(player.playing):
@@ -191,34 +182,8 @@ func endBounce():
 func _physics_process(delta):
 
 	justCol=false
-	if(beingShot):
-		#var didThing=false
-		#
-		#var a = (abs(position.y-target.y))
-		#var b = (abs(position.x-target.x))
-		#if b>16-7:
-#
-			#print("aaaaa")
-			#position.x=move_toward(position.x,target.x, velocity.length()*delta)
-			#didThing=true
-		#if a>16-7:
-			#print("bb")
-			#position.y=move_toward(position.y,target.y, velocity.length()*delta)
-			#didThing=true
-		#if(!didThing):
-			##if(beingShot==1):
-				##print("A")
-				##position.y=move_toward(position.y,target.y, velocity.length()*delta)
-				##if(position.y==target.y):
-					##didThing=true
-			##elif(beingShot==2):
-				##print("b")
-				##position.x=move_toward(position.x,target.x, velocity.length()*delta)
-				##if(position.x==target.x):
-					##didThing=true
-			##if(didThing):
-			#beingShot=0
-			#velocity=oldV
+	if(beingShot): #handle being in a cannon
+	
 		position.x=move_toward(position.x,target.x, oldV.length()*delta) #if velocity.length()*delta > 1 else 1)
 		position.y=move_toward(position.y,target.y,  oldV.length()*delta) #if velocity.length()*delta > 1 else 1)
 		if(position==target):
@@ -235,25 +200,22 @@ func _physics_process(delta):
 		hitConveyor[key]=false
 
 	oldFloor=grounded
-	if(useMouse):
+	if(useMouse): #get aim for cursor
 		aim_dir= (get_global_mouse_position()-global_position).normalized()
 	else:
 		aim_dir = Input.get_vector("aimLeft", "aimRight", "aimUp", "aimDown").normalized()
 
 	if(aim_dir.length()==0):
-		#cursor.hide()
 		line.hide()
 	else:
-		#cursor.show()
 		line.show()
-	#cursor.rotation = Transform2D.IDENTITY.looking_at(aim_dir).get_rotation()
 	line.set_point_position(1,aim_dir*linelength)
-	var tmp = gravity *(CONVEYORGRAVFACT if oldOnConveyor else 1)
+	var tmp = gravity *(CONVEYORGRAVFACT if oldOnConveyor else 1) #handle gravity
 
 	velocity.y += tmp
 	
 	# Handle jump.
-	if (jumpTicks>0) and (grounded||coyotecounter>0) and bounce==BounceState.None:
+	if (jumpTicks>0) and (grounded||coyotecounter>0) and bounce==BounceState.None: #handle jumping if the player fully grounded and not dashing
 		
 		jumpTicks=0
 		coyotecounter=0
@@ -264,43 +226,37 @@ func _physics_process(delta):
 			player.stream=jumpNoise
 		player.play()
 
-	# Get the input direction and handle the movement/deceleration.
-	# As good practice, you should replace UI actions with custom gameplay actions.
+	# get input dir
 	direction = Input.get_axis("moveLeft", "moveRight")
 
 	
 	velOffset = velocity.normalized()
 	oldV=velocity
 
-	match bounce:
-		#if direction && (abs(velocity.x)<SPEED||velocity.x*direction<0):
-			#velocity.x += direction * SPEED * delta * AIRCONTROL
-		BounceState.None:
-			if direction && (abs(velocity.x)<SPEED||velocity.x*direction<0):
+	match bounce: #handle movement states
+	
+		BounceState.None: #handle normal movement
+			if direction && (abs(velocity.x)<SPEED||velocity.x*direction<0): 
 
-				#var acc
-				#if(velocity.x*direction<0 and abs(velocity.x)<SPEED and not onconveyor): #boost acceleration if turning and not speeding (to keep exceel speed a thing you have to balance)
-					#acc=ACCEL*ACCELBOOST
-				#else:
-					#acc=ACCEL
+			
 				velocity.x = move_toward(velocity.x,SPEED*direction,((ACCEL if grounded else ACCEL/AIRCONTROL) if !onice else ACCEL/ICECONTROL)+(OVERDECEL if abs(velocity.x)>SPEED and velocity.x*direction<0 else 0))
 
-				if(velocity.x*direction>0):
+				if(velocity.x*direction>0): 
 
-					velocity.x = min(SPEED,abs(velocity.x))*(1 if velocity.x>0 else -1)
+					velocity.x = min(SPEED,abs(velocity.x))*(1 if velocity.x>0 else -1) #caps non-dash speed
 
 			elif(!direction and !onconveyor):
 
-				velocity.x = move_toward(velocity.x, 0, (ACCEL if !onice else ACCEL/(2*ICECONTROL)))#*ACCELBOOST
+				velocity.x = move_toward(velocity.x, 0, (ACCEL if !onice else ACCEL/(2*ICECONTROL))) #decelerate if no input is held
 
-				if(onice and onslope*velocity.x<0 and abs(velocity.x)<40):
+				if(onice and onslope*velocity.x<0 and abs(velocity.x)<40): 
 					velocity=Vector2.ZERO
 					#fixes weird glitch involving going backwards on upslopes at slow speeds
 
 
 			elif(is_on_floor()&&abs(velocity.x)>SPEED and !onconveyor and !onice):
 
-				velocity.x = move_toward(velocity.x, SPEED, OVERDECEL) #don't steal speed too quick
+				velocity.x = move_toward(velocity.x, SPEED, OVERDECEL) #decelerate 
 
 			
 
@@ -309,10 +265,10 @@ func _physics_process(delta):
 			onconveyor=false
 			onslope=0
 			onice=false
-			#if(tileMap): floor_snap_length=0
+		
 
 			
-			if(get_slide_collision_count()>0):
+			if(get_slide_collision_count()>0): #handle collisions
 				for i in get_slide_collision_count():
 					justCol=true
 					var col = get_slide_collision(i)
@@ -322,23 +278,20 @@ func _physics_process(delta):
 
 					else:
 
-						handleTile(col) #col.get_position()-off
-						#print(get_slide_collision_count())
-						#print(colpos)
-						#var off = (global_position-col.get_position()).normalized()+Vector2(.001,.001 ) ##offset fixes off by one error when exactly lined up
+						handleTile(col) 
+					
 
 
 
-		BounceState.Bouncing:
+		BounceState.Bouncing: #stage 1 of dash
 			var tmpPos=position
 			var collision = move_and_collide(velocity * delta)
-			var didThing= false
+			var clipped= false
 			if(collision):
 
-				if(collision.get_collider() is Node): #enable to clip through corners of one way plats
+				if(collision.get_collider() is Node): #allows you to clip through corners of one way plats when dashing
 					var cold = collision.get_collider()
 
-					#print(cold.get_groups())
 					if(cold.is_in_group("gothruplat")):
 						var norm = collision.get_normal()
 
@@ -347,32 +300,21 @@ func _physics_process(delta):
 
 						if(norm.x!=0 and norm.y!=0 and !grounded):
 
-							didThing=true
+							clipped=true
 							position+= oldV*delta
-						#print("a")
-						#if((global_position.x+2.5<cold.global_position.x-cold.w or global_position.x-2.5>cold.global_position.x+cold.w)and not grounded):
-							#print("zone")
-							# 
-							#position+= velocity*delta
+
 				
-				if(!didThing):
+				if(!clipped):
 					justCol=true
 					if(!tileMap):
 						hitCheck(collision.get_collider())
 					else:
-						#var off = (global_position-collision.get_position()).normalized()
 						handleTile(collision)
 
 							
-					#print(gothru)
-					#if(gothru):
-						#position=tmpPos
-						#oldV.y=0
-						#position += oldV*delta
-						#velocity=oldV
-					#else:
-					transgenderBounce(collision)
-		BounceState.Landing:
+				
+					transitionBounce(collision)
+		BounceState.Landing: #stage 2 of dash
 			move_and_slide()
 			oldOnConveyor=onconveyor
 			onconveyor=false
@@ -387,25 +329,15 @@ func _physics_process(delta):
 
 						handleTile(col) #col.get_position()-off
 
-				endBounce()
+				endBounce() #end dash when you touch something
 
 
-		#var collision = move_and_collide(velocity * delta)
-		#if(collision):
-			#if(bounce == 2):
-				#endBounce()
-				#
-			#elif(bounce==1):
-				#bounce+=1
-				#velocity = velocity.bounce(collision.get_normal()) * bounceFact
-			#hitCheck(collision.get_collider())
-
+		
 
 
 
 	
 			
-		
 	hitBouncy=false
 	if(is_on_floor()&&bounce == BounceState.None):
 		if(oneTickGroundDelay):
@@ -429,7 +361,7 @@ func hitCheck(obj):
 	if obj is Node:
 		if obj.is_in_group("hazard"):
 			die()
-func die():
+func die(): 
 
 	var dM = deathSign.instantiate()
 	dM.position=position
@@ -439,7 +371,7 @@ func die():
 
 
 
-func eraseAll(pos,typeGoal,usedDict):
+func eraseAll(pos,typeGoal,usedDict): #handle recursively popping bubble tiles on hit
 	var dat = tileMap.get_cell_tile_data(0,pos)
 	var type
 	if(dat):
@@ -459,71 +391,44 @@ func eraseAll(pos,typeGoal,usedDict):
 				if(i==0 and j==0) or usedDict.has(newPos):
 					continue
 				eraseAll(newPos,typeGoal,usedDict)
-func handleTile(col):
-	if(col.get_collider()!=tileMap):
+func handleTile(col): #handle collisions w/ tilemap
+	if(col.get_collider()!=tileMap): #fallback if tilemap variable is not set
 		hitCheck(col.get_collider())
 		return
-	if(tileMap):
+	if(tileMap): 
 		var tilePos = tileMap.get_coords_for_body_rid(col.get_collider_rid())
 		var type
-		#var pos = tileMap.to_local(tilePos)
-	#	pos= tileMap.local_to_map(pos)
-		#
+
 		var dat = tileMap.get_cell_tile_data(0,tilePos)
 
-		if(dat):
-			var thing = (dat.get_custom_data("special"))
-			if(thing != ""):
-				type = thing
+		if(dat): #if tile has data
+			var customDat = (dat.get_custom_data("special")) #get tile custom fata
+			if(customDat != ""):
+				type = customDat
 			else:
 
 				return
 		else:
 
 			return
-		#KNOWN BUG: player will snap to hazards if it can walk along a diagonal hazard, do not put diagonal hazard tiles next to non-hazardous tiles, separate them by at least one flat hazard tile
-		#floor snap stuff "fixed" it but broke slopes so it can't exist.
-		#if(type=="normal"||type=="ice"||type=="bouncy"):
-			#floor_snap_length=5 #prevents snapping to hazards
-			#var norm = col.get_normal()
-			#norm.x=snapped(norm.x,.1)
-			#norm.y=snapped(norm.y,.1)
-			#if(norm.x!=0 and norm.y!=0):
-				#onslope=1 if norm.x>0 else -1
+	
 
-		match type:
-			"flip":
-				if(bounce==BounceState.Bouncing):
-					#var tmpv=velocity.x
-					#velocity.x=abs(velocity.y)*(1 if velocity.x>0 else -1)
-					#velocity.y=abs(tmpv)*(1 if velocity.y>0 else -1)
-
-					#var norm = snapped(col.get_normal(),Vector2(.1,.1))
-					#if(norm.x!=0):
-						#velocity.y*=-1
-					#else:
-						#velocity.x*=-1
-						
-					if(abs(velocity.y)>abs(velocity.x)):
-						velocity.x=0
-					else:
-						velocity.y=0
-					onice=true
-			"normal":
+		match type: #handle each type of tile
+			"flip": #gravity-flip tiles - removed
 				pass
-			#"gothru":
-				#
-				#gothru=true
-			"bouncy":
+			
+			"normal": #normal terrain
+				pass
+
+			"bouncy": #super-bouncy tiles
 				hitBouncy=true
-			"ice":
+			"ice": #slippery tiles
 				onice=true
 			
-			"conveyor_white": #white conveyors bring you up to a speed. bouncing off them does little as a result
+			"conveyor_white": #white conveyors bring you up to a speed over time. bouncing off them to gain speed does little as a result
 
 				if(hitConveyor["white"]): return
 				hitConveyor["white"]=true
-				#todo: make speedy conveyor
 				var force = (CONVEYORFORCE["white"]*col.get_normal()).rotated(PI/2) * (1 if oldOnConveyor else CONVEYOR_WHITEINITBOOSTFACTOR)
 
 				onconveyor=true
@@ -535,32 +440,23 @@ func handleTile(col):
 				if(flipped==1): force*=-1
 
 				if(abs(force.x)>.2):
-					#if(force.x>0):
-						#force.y=min(CONVEYORSTICKYFORCE,(force.y if force.y>0 else CONVEYORSTICKYFORCE))
-					#else:
-						#force.y=max(-CONVEYORSTICKYFORCE,(force.y if force.y<0 else -CONVEYORSTICKYFORCE))
-
+					
 					if abs(velocity.x)<CONVEYORMAXFORCE or force.x*velocity.x<0:
 						velocity.x=min(abs(velocity.x+force.x),CONVEYORMAXFORCE)*(1 if velocity.x+force.x>0 else -1)
 
-					#else:
-						#print("toofast1")
-					#if(velocity.x*force.x<0):velocity.x=force.x
+				
 				else:
 
 					
 
 					if (abs(velocity.y)<CONVEYORMAXFORCE or force.y*velocity.y<0) and (!direction or Vector2(direction,0).angle_to(normal)!=0):
 						velocity.y=min(abs(velocity.y+force.y),CONVEYORMAXFORCE)*(1 if velocity.y+force.y>0 else -1)
-					#if(velocity.y*force.y<0):velocity.y=force.y
-					#else:
-						#print("toofast2")
-			"conveyor_black": #black conveyors are like dash pads- instant speed. bouncing off them will severely affect ur trajectory.
+				
+			"conveyor_black": #black conveyors are like dash pads- instant speed. bouncing off them will severely affect your trajectory.
 				onconveyor=true
 				if(hitConveyor["black"]): return
 				hitConveyor["black"]=true
 				var normal=col.get_normal()
-				#todo: make speedy conveyor
 				var force = (CONVEYORFORCE["black"]*normal).rotated(PI/2)
 				force.x=snapped(force.x,1)
 				force.y=snapped(force.y,1)
@@ -570,16 +466,13 @@ func handleTile(col):
 				if(force.x!=0):
 					if abs(velocity.x)<CONVEYORFORCE["black"] or force.x*velocity.x<0:
 						velocity.x=force.x
-					#else:
-						#print("toofast1")
+
 				else:
 
 					if (abs(velocity.y)<CONVEYORFORCE["black"] or force.y*velocity.y<0) and (!direction or Vector2(direction,0).angle_to(normal)!=0):
 						velocity.y=force.y
 
-					#else:
-						#print("toofast2")
-						
+	
 						
 		#check that stops you from grazing hazardous tiles:
 		var diff = (global_position-col.get_position())
@@ -596,7 +489,6 @@ func handleTile(col):
 					die()
 				
 				"crumble":
-					#await get_tree().create_timer(.1).timeout
 					var used={}
 					eraseAll(tilePos,"crumble",used)
 					Musicplayer.playBub()
@@ -605,27 +497,10 @@ func handleTile(col):
 					eraseAll(tilePos,"crumblebounce",used)
 					hitBouncy=true
 					Musicplayer.playBub()
-			#removed: grav flip stuff, too jank and not enough room to utilize
-			#"up":
-				#if(gravity == gravities[type]): return
-				#gravity = gravities["up"] #totally broken, need to adjust sense of floor? and xy movement to match, ugh
-				#up_direction=-gravities["up"].normalized() #this causes stutters idk why
-			#"down":
-				#if(gravity == gravities[type]): return
-				#gravity = gravities["down"]
-				#up_direction=-gravities["down"].normalized()
-			#"right":
-				#if(gravity == gravities[type]): return
-				#gravity = gravities["right"]
-				#up_direction=-gravities["right"].normalized()
-			#"left":
-				#if(gravity == gravities[type]): return
-				#gravity = gravities["left"]
-				#up_direction=-gravities["left"].normalized()
-				##add 4 things for each dir of grav flip tiles
+			
 
 
-func momentumCannonEntered(dir, center,cn):
+func momentumCannonEntered(dir, center,cn): #set up cannon
 	target = center
 	oldPos=position
 	if(justCol):

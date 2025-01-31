@@ -5,7 +5,7 @@
 #include <map>
 class avl {
 private:
-	struct node { //struct since all of this gets modified by the class
+	struct node { //struct since all of this gets modified by the class, basic tree node, contains a name and id
 		int id;
 		std::string name;
 		node(int idIn, std::string nameIn);
@@ -13,7 +13,7 @@ private:
 		node* right;
 		int height;
 	};
-	
+
 	node* head; //only actual variable of the class
 
 	//methods used by a variety of methods to simplify code and balance the AVL
@@ -28,7 +28,7 @@ private:
 	node* balance(node* n);
 	int checkBalance(node* n);
 
-	//the recursive methods called by the publix methods
+	//the recursive methods called by the public methods
 	node* searchIDRecursePoint(int idIn, node* n, std::string& nameOut);
 	void removeRecurse(int idIn, node* n);
 	bool removeInorderRecurse(int m, node* n, int& count, bool& b);
@@ -44,7 +44,7 @@ public:
 
 	avl(); //default and only constructor, sets head to nullptr
 
-	//public methods with recurse private methods
+	//public methods with recursive private methods
 	void insert(int idIn, std::string nameIn);
 	void insertNode(node* in);
 	void remove(int idIn);

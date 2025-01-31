@@ -1,2 +1,2 @@
-
-This is a sampling of GDSscript (Language used by the Godot game engine) code I wrote for a deckbuilder game prototype.
+This is a sampling of GDSscript (Language used by the Godot game engine) code I wrote for a deckbuilder grid battler game prototype. The game did not make it past the demo stage with a few cards and a couple enemy types, but working on it taught me a lot about randomization, deck management, working with a grid, interlinking scripts and entities, and how to use Godot in general, as this was my first major godot project.
+Included are the scripts cardUI.gd, which handled the UI for choosing cards as well as the deck system itself, enemy_base.gd, a base class inherited by all enemies, enemy.gd, a basic enemy which inherits from enemy_base, and player.gd, which handles player movement and spawning in the player attacks through communication with cardUI.

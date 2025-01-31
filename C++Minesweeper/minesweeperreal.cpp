@@ -1,5 +1,7 @@
 #include <SFML/Graphics.hpp> //SFML version 2.6
 #include "board.h"
+
+//main class, handles actually running the game and the basics graphic logic
 int main()
 {
     ifstream f;
@@ -11,9 +13,9 @@ int main()
     int m;
     f >> m;
     sf::RenderWindow window(sf::VideoMode(l * 32, h * 32 + 88), "Minesweeper");
-    board b(l, h, m);
+    board b(l, h, m); //set up the actual board class, which handles most of the game logic
 
-    while (window.isOpen())
+    while (window.isOpen()) //run the game until the window is closed
     {
         sf::Event event;
         while (window.pollEvent(event))
@@ -21,7 +23,7 @@ int main()
             if (event.type == sf::Event::Closed) {
                 window.close();
             }
-            else if (event.type == sf::Event::MouseButtonPressed) {
+            else if (event.type == sf::Event::MouseButtonPressed) { //have the board handle a left or right click
                 if (event.mouseButton.button == sf::Mouse::Right) {
                     b.clicked(event.mouseButton.x, event.mouseButton.y, true);
 
@@ -35,7 +37,7 @@ int main()
         window.clear(sf::Color::White);
 
 
-        for (int i = 0; i < l; i++) {
+        for (int i = 0; i < l; i++) { //draw all the tiles, mines, flags, and numbers
             for (int j = 0; j < h; j++) {
                 // cout << i << j;
                 board::tile* temp = b.get(i, j);
@@ -56,11 +58,13 @@ int main()
 
             }
         }
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 3; i++) { //draw the buttons that change the board to the test boards
             window.draw(b.tests[i]);
         }
-        window.draw(b.debug);
-        window.draw(b.face);
+        window.draw(b.debug); //draw the debug mode button
+        window.draw(b.face); //draw the reset button
+
+        //draw the flag count indicator
         if (b.checkcount()) {
             window.draw(b.digits[0]);
 

@@ -10,7 +10,7 @@ avl::node::node(int idIn, std::string nameIn) { //node constructor
 	height = 1; //gets updated after being inserted
 }
 
-void avl::updateHeight(avl::node* n) { //used to simplify code
+void avl::updateHeight(avl::node* n) { //used to simplify code, recalculates node height
 	n->height = max(height(n->left), height(n->right))+1;
 }
 int avl::height(avl::node* n) { //made to avoid nullptr errors
@@ -71,7 +71,6 @@ void avl::insertRecurse(int idIn, std::string nameIn, node* n, bool& b) { //recu
 		n->right = balance(n->right);  //check to see if balancing is needed.
 	}
 	updateHeight(n); //update height
-	//update(n); //update heights
 }
 void avl::insertNode(node* in) { //this section is just used to re-add nodes who's parents were deleted.
 	insertNodeRecurse(in, head);
@@ -108,7 +107,7 @@ void avl::remove(int idIn) {
 			head = old->right;
 			insertNodeRecurse(old->left, head); //add in the old children so they don't get deleted too
 		}
-		else if (old->right != nullptr) { 
+		else if (old->right != nullptr) {
 			head = old->right;
 		}
 		else if (old->left != nullptr) {
@@ -176,7 +175,7 @@ void avl::removeRecurse(int idIn, node* n) {
 			std::cout << "successful\n";
 		}
 		else if (n->right != nullptr) { //if it wasn't the right node, recurse
-			removeRecurse(idIn, n->right); 
+			removeRecurse(idIn, n->right);
 		}
 		else {
 			std::cout << "unsuccessful\n";
@@ -265,7 +264,7 @@ bool avl::removeInorderRecurse(int m, node* n, int& count, bool& b) {
 	}
 	return false;
 }
-//citing stepik, used it to help figure the rotations
+//rotation functions used to balance the tree
 avl::node* avl::turnLeft(node* n)
 {
 	node* rc = n->right;
@@ -277,7 +276,6 @@ avl::node* avl::turnLeft(node* n)
 }
 avl::node* avl::turnRight(node* n)
 {
-	//std::cout << "LLcase\n";
 	node* lc = n->left;
 	n->left = lc->right;
 	lc->right = n;
@@ -286,19 +284,17 @@ avl::node* avl::turnRight(node* n)
 	return lc;
 }
 avl::node* avl::turnLeftRight(node* n) {
-	//std::cout << "LRcase\n";
 	n->left = turnLeft(n->left);
 	return turnRight(n);
 }
 avl::node* avl::turnRightLeft(node* n) {
-	//std::cout << "RLcase\n";
 	n->right = turnRight(n->right);
 	return turnLeft(n);
 }
 
 int avl::checkBalance(node* n) {
 	if (n == nullptr) { //avoids nullptr errors
-		return 0; 
+		return 0;
 	}
 	return (height(n->left) - height(n->right)); //balance factor calculation
 }
@@ -377,7 +373,7 @@ bool avl::searchIDRecurse(int idIn, node* n, std::string& nameOut) {
 		return false;
 	}
 	if (n->id == idIn) {
-		nameOut = n->name; 
+		nameOut = n->name;
 		return true;
 	}
 	bool b = false;
@@ -438,6 +434,7 @@ void avl::printInorderRecurse(node* n, std::vector<std::string>& printQ) {
 	if (n->right != nullptr) printInorderRecurse(n->right, printQ);
 	return;
 }
+//Print methods to print out the tree in one of 3 ways
 void avl::printPreorder() { //Preorder and Postorder are the Inorder code but slightly changed.
 	if (head == nullptr) {
 		std::cout << "\n";

@@ -1,30 +1,28 @@
+#this script manages the card UI and the deck itself
 extends Node
 var cardArray = []
 var file = "res://spellstuff/cards.txt"
 var cardNum
 var icon
 var canDraw = false
-var handOut = false
+var cardChoicesOut = false
 var blankSpellCard = preload("res://spellstuff/blank_spell.png")
 var greenBar = preload("res://assets/bar.tres")
 var greyBar = preload("res://assets/greybar.tres")
 var fillerCard = preload("res://spellstuff/dummy.png")
 var chosenCardIndex= [0,0,0,0,0]
 
-var choices = 5
-#mechanic where you can stockpile cards (up to 5) then unleash them in order?
-#shift = queue instead queue
-#combo spells that double spells?
+const CHOICESGOAL = 5
+var choices = CHOICESGOAL #how many spells there are to pick from
 var shuffling = false
-#TODO: actually implement dynamic hand #mostly done just need to actually do the between level stuff, deck is flexible and wraps around when used up
+
 signal castCallBack(spellOut)
-func playerCastAttempt():
+func playerCastAttempt(): #handle the player attempting to cast, give them a card if there is one in the hand
 	if(hand.size()>0):
 		castCallBack.emit(hand[0])
-
 		used()
 
-@onready var spellCards = { #add size cost thing
+@onready var spellCards = {  #dictionary of all the possible spells in the deck
 	"Explosion": spell.new(
 		"Explosion",
 		load("res://spellstuff/purple_spell_card.png"),
@@ -116,26 +114,23 @@ func playerCastAttempt():
 		"Bouncy attack",
 		1
 	)
-	#spell ideas:
-	#instead of root maybe shock that (simple stun)
-	#fire constant dps
-	# water push but put out fire and doesn't work if ice
-	#ice half damage if fire
-	#wet status effect = half fire damage double shock
 }
 
 @onready var keys = spellCards.keys()
-@export var deck = ["Fireball"] #default is 1 fireball
+@export var deck = ["Fireball"] #the deck of cards, default is 1 fireball
 var hand = []
-@onready var handIcons = [$Control2/VBoxContainer/card1,$Control2/VBoxContainer/card2,$Control2/VBoxContainer/card3,$Control2/VBoxContainer/card4,$Control2/VBoxContainer/card5]
+
 var handSize = 5
-@onready var updatedDeck = deck.duplicate()
+@onready var updatedDeck = deck.duplicate() #working copy of the base deck that actually gets modified, the original deck value is used as a base to make this
 var discard = []
 var rng = RandomNumberGenerator.new()
+
+#ui element references
+@onready var handIcons = [$Control2/VBoxContainer/card1,$Control2/VBoxContainer/card2,$Control2/VBoxContainer/card3,$Control2/VBoxContainer/card4,$Control2/VBoxContainer/card5]
 @onready var buttons = [$Control/PanelContainer/HBoxContainer/VBoxContainer/card1,$Control/PanelContainer/HBoxContainer/VBoxContainer3/card2,$Control/PanelContainer/HBoxContainer/VBoxContainer4/card3,$Control/PanelContainer/HBoxContainer/VBoxContainer5/card4,$Control/PanelContainer/HBoxContainer/VBoxContainer2/card5]
 @onready var costlabels = [$Control/PanelContainer/HBoxContainer/VBoxContainer/HBoxContainer/costlabel1,$Control/PanelContainer/HBoxContainer/VBoxContainer3/HBoxContainer2/costlabel2,$Control/PanelContainer/HBoxContainer/VBoxContainer4/HBoxContainer3/costlabel3,$Control/PanelContainer/HBoxContainer/VBoxContainer5/HBoxContainer4/costlabel4,$Control/PanelContainer/HBoxContainer/VBoxContainer2/HBoxContainer5/costlabel5]
-# Called when the node enters the scene tree for the first time.
-class spell:
+
+class spell: #defines the custom spell class that stores the actual attack object, the description of the spell, and the image associated
 	var card: Texture2D
 	var name
 	var slots
@@ -150,49 +145,39 @@ class spell:
 		size = z
 	func isDummy():
 		return false
-class dummy:
+		
+class dummy: #class for dummy spells that just take up slots, as some spells add dummy spells to your hard as their cost
 	func isDummy():
 		return true
+		
 func addCard(card):
 	deck.append(card)
-func _ready():
-
-
-	$Control/timerBar.max_value=$cooldownTimer.wait_time
-
-	#print(spellCards.size())
-	global.cardUI=self
 	
+func _ready():
+	$Control/timerBar.max_value=$cooldownTimer.wait_time #setup cooldown bar
+	global.cardUI=self
 	rng.randomize()
-	#var f = FileAccess.open(file, FileAccess.READ)
-	#var tmp = f.get_csv_line(',')
-	#for i in tmp:
-		
-	#	var tex : Texture2D = load(i)
-
-	#	cardFiles.append(tex)
-		
 	cardNum = spellCards.size()
-	for i in handSize:
+	for i in handSize: #initialize array of cards
 		cardArray.append("0")
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
+
 func _process(delta):
-	if(shuffling):
+	if(shuffling): 
 		$Control/timerBar.value=$Control/timerBar.max_value-$shuffleTimer.time_left
 	else:
 		$Control/timerBar.value=$Control/timerBar.max_value-$cooldownTimer.time_left
-		if Input.is_action_just_pressed("shuffle"):
+		if Input.is_action_just_pressed("shuffle"): #start a shuffle, shuffle discards back into the deck
 			$cooldownTimer.stop()
 			shuffleTimerSetup()
 			shuffleDiscard()
-			if(handOut):
+			if(cardChoicesOut): #if the game is paused with the 
 				get_tree().paused = false
 				$Control/PanelContainer.visible = false
 				$Control/timerBar.visible=true
-				handOut=false
+				cardChoicesOut=false
 				
-	if(handOut):
+	if(cardChoicesOut): #handle the player picking one of the available cards shown to them
 		if Input.is_action_just_pressed("choice1"):
 			buttonPress(1)
 		elif Input.is_action_just_pressed("choice2"):
@@ -204,50 +189,45 @@ func _process(delta):
 		elif Input.is_action_just_pressed("choice5"):
 			buttonPress(5)
 
-func buttonPress(choice):
-	#print(choice)
-	if(choice>choices):
+func buttonPress(choice): #handle the player picking a card from the available options shown while the game is paused
+	if(choice>choices): #if player picks an invalid option
 		return
-	get_tree().paused = false
+	get_tree().paused = false 
 	var tmpSpell = spellCards.get(cardArray[choice-1])
 	addToHand(tmpSpell)
-	#displayIMG(tmpSpell.card)
+	updatedDeck.remove_at(chosenCardIndex[choice-1]) #remove chosen card from deck and add it to the hand
 
-	updatedDeck.remove_at(chosenCardIndex[choice-1])
 
-	#print("choices " + str(choices))
 	$Control/PanelContainer.visible = false
 	$Control/timerBar.visible=true
-	handOut=false
-	if(updatedDeck.size()>0):
+	cardChoicesOut=false
+	if(updatedDeck.size()>0): #if there are cards left in the deck, normal cooldown applies
 		$cooldownTimer.start()
-	else:
-		#print("sizes "+str(discard.size())+" "+str(updatedDeck.size()))
+	else: #otherwise, start a shuffle
 		shuffleTimerSetup()
 
-	#print("updated deck size " + str(updatedDeck.size()))
 	
-func dealHand():
+func dealChoices(): #pause the game and present the player with up to 5 cards to choose from to add to their hand
 	if(updatedDeck.size()==0):
 		if(discard.size()>0):
-
 			shuffleDiscard()
 		else:
 			return
 	canDraw=false
 	#hideIMG()
-	handOut = true
+	cardChoicesOut = true
 	$Control/timerBar.visible=false
 	get_tree().paused = true
 	var usedNums = []
-	if(updatedDeck.size()<5): 
+	if(updatedDeck.size()<CHOICESGOAL):  #handle the deck having less than the desired amount cards to choose from
 		choices=updatedDeck.size()
-		for i in range(choices,5):
+		for i in range(choices,CHOICESGOAL):
 			buttons[i].set_texture(blankSpellCard)
 			costlabels[i].text = ""
 	else:
-		choices=5
-	for i in range(choices):
+		choices=CHOICESGOAL
+	
+	for i in range(choices): #pick a random card in the deck for each possible choice
 		var num = rng.randi_range(0,updatedDeck.size()-1)
 		while(usedNums.has(num)):
 			num = rng.randi_range(0,updatedDeck.size()-1)
@@ -255,22 +235,20 @@ func dealHand():
 		cardArray[i]=(updatedDeck[num])
 		chosenCardIndex[i]=num
 		var curCard = spellCards.get(cardArray[i])
-		#print(str(choices) + "  help   "+ str(i))
-		#print(str(updatedDeck))
-
 		buttons[i].set_texture(curCard.card)
 
 		costlabels[i].text = str(curCard.size)
-	$Control/PanelContainer.visible = true
+	$Control/PanelContainer.visible = true #make the choices UI visible
 
 	
-func shuffleTimerSetup():
+func shuffleTimerSetup(): #start shuffling the deck, and indicate the time it will take
 	$shuffleTimer.wait_time = deck.size()/4
 	$Control/timerBar.max_value=$shuffleTimer.wait_time
 	$Control/timerBar.add_theme_stylebox_override("fill",greyBar)
 	$shuffleTimer.start()
 	shuffling = true
 
+#recieve input from the choice UI button elements
 func _on_card_1_pressed():
 	$Control/PanelContainer/HBoxContainer/card1.button_pressed=false
 	buttonPress(1)
@@ -293,23 +271,18 @@ func _on_card_5_pressed():
 	$Control/PanelContainer/HBoxContainer/card5.button_pressed=false
 	buttonPress(5)
 
-"""
-func displayIMG(img):
-	global.icon.texture = img
-	global.icon.visible = true
-	"""
+
 func hideIMG():
 	global.icon.visible = false 
 
 
 func _on_cooldown_timer_timeout():
-
-	canDraw = true # Replace with function body.
-func used():
+	canDraw = true 
+	
+func used(): #handle a card being consumeed, add it to the discard and remove it from the player's hand
 	for i in range(0,handSize-hand[0].size,1):
 		handIcons[i].set_texture(handIcons[i+hand[0].size].get_texture())
 	for i in range(hand[0].size):
-
 		handIcons[hand.size()-i-1].set_texture(blankSpellCard)
 
 	discard.push_back(hand[0].name)
@@ -320,14 +293,12 @@ func used():
 			if(hand.size()==0):
 				break
 		
-func shuffleDiscard():
-
-
-
+func shuffleDiscard(): #helped function to put the discard pile back in the deck and clear the discard pile after
 	if(discard.size()>0):
 		updatedDeck+=discard
 	discard.clear()
-func addToHand(sp):
+	
+func addToHand(sp): #add a chosen spell to the player's hand/queue, either to the front of the hand or back depending on if cast is held down
 	if (Input.is_action_pressed("cast")):
 			
 		hand.append(sp)
@@ -375,7 +346,7 @@ func addToHand(sp):
 		handIcons[i].set_texture(blankSpellCard)
 
 
-func _on_shuffle_timer_timeout():
+func _on_shuffle_timer_timeout(): #end shuffling, and switch to the normal cooldown
 	shuffling = false
 	$Control/timerBar.max_value=$cooldownTimer.wait_time
 	$Control/timerBar.add_theme_stylebox_override("fill",greenBar)

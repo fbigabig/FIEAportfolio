@@ -1,0 +1,4 @@
+This folder contains the source code for a class project that involved the creation of an AVL tree class. 
+avl.h contains variables and function prototypes for the avl tree.
+avl.cpp contains the implementation of the functions of an avl tree, such as the ability to add and delete nodes, the ability to print the tree in different orders, and the tree's autobalancing features using different types of rotation.
+main.cpp gives the user the ability to perform a variety of commands on the avl tree, such as insertion, searching, deleting, and printing, by managing an avl tree instance and calling its functions.
