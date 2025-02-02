@@ -1,0 +1,6 @@
+Aaron Gill's programming portfolio.
+This portfolio is a showcase of my coding work done over the last few years as part of my application for FIEA.
+Each folder either contains the complete source code for a project, or a sampling of key pieces of source code for a large project. 
+Each folder contains its own readme with elaboration on what the code comes from and what its purpose is.
+All projects are labeled as either C++ or Godot. The C++ projects include the full source code of each project, though not any extraneous non-code files, as this is just a showcase of code.
+The Godot projects include code written in GDScript, a Python-esque language used by the Godot game engine, and contain samplings of code from personal game development projects. The godotSpeedGame folder README also includes a link to the GitHub repo of the complete project, as well as a link to download the completed game, but I just chose to show off the two most important and code-heavy files from the project, as the rest of the code for the project is broken up into many shorter scripts.
